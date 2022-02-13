@@ -3,8 +3,20 @@
 function selectCol(){
 fileN=$1
 selectedCol=$2
-echo $selectedCol
-awk -v val="$selectedCol"  -F: '{print $val}' $fileN
+
+if [ -z $selectedCol ]
+      then
+        echo -e " please enter column number"
+        echo Please enter your choice
+
+      elif [[ $selectedCol =~ [0-9] ]]
+      then
+         awk -v val="$selectedCol"  -F: '{print $val}' $fileN
+         echo Please enter your choice
+      else
+            echo "You should enter column number"
+            echo Please enter your choice   
+      fi
 }
 
 ##############################################################################
@@ -12,13 +24,41 @@ awk -v val="$selectedCol"  -F: '{print $val}' $fileN
 function selectRow(){
 fileNm=$1
 selectedParameter=$2
-echo $selectedParameter
-awk -v pat="$selectedParameter"  -F: '{for (i=1;i<=NF;i++) if ($i~pat) {print $0}}' $fileNm
+      if [ -z $selectedParameter ]
+      then
+        echo -e " primary key shouldn't be null !!!!"
+        echo Please enter your choice
+
+      elif [[ $selectedParameter =~ [0-9] ]]
+      then
+         val=$(awk  -F: '{print $1}' $fileNm | grep -w $selectedParameter)
+            if [ $? == 0 ]
+            then
+             {
+               awk -v pat="$selectedParameter"  -F: '$1 == pat' $fileNm
+               echo ""
+               echo Please enter your choice
+             }
+            else
+              echo "This primary key not found"
+              echo ""
+              echo Please enter your choice
+            fi
+      else
+            echo "Primary key should be number !!!!"
+            echo ""
+            echo Please enter your choice   
+      fi
+
 }
 ################################################################################
 
 function selectall(){
+echo Table data is :
+echo --------------
 cat $1
+echo ""
+echo Please enter your choice
 }
 
 ################################################################################
@@ -27,59 +67,109 @@ function selectfromtable(){
 
 echo "Please enter table name"
 read tableNme
-        if [ -z $tableNme ]
- then
-       echo "Enter The Table Name!!!"   
-        fi
-echo the table you entered is $tableNme
-for tableList in `ls`
-do
-   if [ -f "$tableNme" ]
-then
-{
-echo "Please enter your choice: "
+     if [ -z $tableNme ]
+        then
+        echo "Please enter The Table Name!!!"   
+        echo Please enter the choice
+        else
+        for tableList in `ls`
+         do
+          if [ -f "$tableNme" ]
+          then
+          {
+            echo "Please enter your choice: "
 
-select opt in "Select all table data" "Select row" "Select col" "back to table menu"
-      do
-    case $REPLY in
-        1)
-        echo select all table data
-        selectall $tableNme 
-            ;;
-        2)
-          echo select row by id
-          echo enter id
-          read rowID
-          selectRow $tableNme  $rowID    
-            ;;
-        3)
-            echo select field
-            echo enter col number
-          read colNum
-          selectCol $tableNme  $colNum
-
-             ;;
-        4)
-          tablemenu
-          break
-               ;;
-        *) echo "invalid option $REPLY";;
-    esac
-done
-}
-else
-echo This table not exist 
-tablemenu
+           select opt in "Select all table data" "Select row" "Select col" "back to table menu"
+              do
+                case $REPLY in
+                1)
+                  echo ""
+                  selectall $tableNme
+                        ;;
+                2)
+                  echo Please enter row primary key you want to select
+                  read rowID
+                  selectRow $tableNme  $rowID
+                        ;;
+                3)
+                  echo enter column number you want to select
+                  read colNum
+                  selectCol $tableNme  $colNum
+                        ;;
+                4)
+                  tablemenu
+                  break
+                       ;;
+                *) echo "invalid option $REPLY";;
+                esac
+             done
+         }
+         else
+            echo this table not found
+         fi
+   done
 fi
-
-done
-
 }
 
 ################################################################################33
 
 function updatetable(){
-echo hello
+echo ""
+echo Please enter table name
+read tname
+if [ -z $tname ]
+     then
+         echo -e " please enter a correct name"
+         echo Please enter your choice
+
+     elif [[ -f $tname ]]
+     then
+         echo Please enter row primary key you want to update in 
+         read pk
+         if [ -z $pk ]
+         then
+           echo -e "Primary key shouldn't be null !!!!!"
+           tablemenu
+
+         elif [[ $pk =~ [0-9] ]]
+         then
+           echo ""
+           echo "Row you want to update is"
+           awk -v pat1="$pk"  -F: '$1 == pat1' $tname
+           alue=$(awk  -F: '{print $1}' $tname | grep -w $pk)
+            if [ $? == 0 ]
+            then
+             {
+               var=$(awk -v pat="$pk"  -F: '{if ($1 == pat) print NR}'  $tname)
+               echo ""
+               echo enter old value
+               read old
+               echo enter new value
+               read new
+               sed -i "$var s/$old/$new/" $tname
+               echo ""
+               echo "Field updated successfully"
+               echo ""
+               echo Table data after update  is :
+               echo -----------------------------
+               cat $tname
+               echo ""
+               tablemenu
+             }
+            else
+              echo "This primary key not found"
+              echo ""
+              echo Please enter your choice
+            fi
+else
+            echo "Primary key should be number !!!"
+            tablemenu
+         fi
+     else
+         echo -e "Table $tname  Not found"
+         echo Please enter your choice  
+fi
+
 }
 
 
@@ -87,25 +177,52 @@ echo hello
 
 function dropfromtable(){
 read -p "Enter table Name: " tabname
-if [ -z $tabname ] ; then
-echo -e "please enter the name to delet"
-else
+if [ -z $tabname ]
+     then
+         echo -e " please enter a correct name"
+         echo Please enter your choice
 
-echo please enter row id to delete
-read -r  rId
-sed -i "/$rId/d" $tabname
-cat $tabname
-  fi
-if [ $? == 0 ]; then
-    echo -e "row Dropped Successfully"
-     tablemenu
-  else
-    echo -e "table Not found"
-    tablemenu
-  fi
+     elif [[ -f $tabname ]]
+     then
+         echo Please enter row primary key to delete
+         read -r  rId
+         if [ -z $rId ]
+         then
+           echo -e "Primary key shouldn't be null !!!!!"
+           tablemenu
+
+         elif [[ $rId =~ [0-9] ]]
+         then
+            val=$(awk  -F: '{print $1}' $tabname | grep -w $rId)
+            if [ $? == 0 ]
+            then
+             {
+               sed -i "/$rId/d" $tabname
+               echo ""
+               echo "Row dropped successfully"
+               echo ""
+               echo "File data now"
+               echo --------------
+               cat $tabname
+               echo ""
+               tablemenu
+             }
+            else
+              echo "This primary key not found"
+              echo ""
+              tablemenu
+            fi
+           
+         else
+            echo "Primary key should be number !!!"
+            tablemenu          
+         fi
+     else
+         echo -e "Table $tabname  Not found"
+         echo Please enter your choice  
+fi  
+
 }
-
-
 
 
 
@@ -115,26 +232,27 @@ function insertintotable(){
 read -p "Enter Table Name : " table_name   
 	if [ -z $table_name ]; then
        echo "Enter The Table Name!!!"	
-	fi
-
-	 index=1
+	elif [[ -f $table_name  ]]
+        then
+	index=1
 	size=0
 	row=""
-        for tableName in `ls`
+       for tableName in `ls`
         do
-            if [ $tableName = $table_name ]; then
+            if [ $tableName = $table_name ]; then 
+           
 	      echo "Table Selected successfully" 
               echo "===================================="
-	      echo "The First Column is the primary Key"
+	      echo "The First Column is primary Key and should be a number"
 	      echo "===================================="
-		array=(`awk -F":" '{if (NR>=3) print $3}' metaData_$tableName`)
+		array=(`awk -F":" '{if (NR>=3) print $3}' .metaData_$tableName`)
 		arr=(`awk -F":" '{print $1}' $tableName`)		
 		size=${#array[*]}
-		read -p "Enter the value of column ${array[0]} : " input
+		read -p "Enter value of column ${array[0]} : " input
 		    if [ -z $input ];  then
 		     echo "Primary Key Cann't be Null!!!" 
                         return 1 
-              elif [[ $input =~ ^[a-zA-Z]+$ ]]; then 
+              elif [[ $input =~ [a-zA-Z]+$ ]]; then 
                   echo "Primary Key accept numbers only!!!" 
                         return 1
 			elif [ ${#arr[*]} -eq 0 ];    then
@@ -143,7 +261,7 @@ read -p "Enter Table Name : " table_name
                
 			while (($index < $size))
 			do
-			read -p "Enter the value of column ${array[index]} : " inputarray[index]
+			read -p "Enter value of column ${array[index]} : " inputarray[index]
 			((index =$index+1))
 			done
 		else
@@ -156,49 +274,101 @@ read -p "Enter Table Name : " table_name
 	         fi
 	         ((index =$index+1))
 		done
-		index=1
+
+                index=1
+                row=${inputarray[0]}
 	         inputarray[0]=$input
 		while (($index < $size))
 		do
-		read -p "Enter the value of column ${array[index]} : " inputarray[index]
-		((index =$index+1))
-		done
-		fi
-			
-		index=1
+		read -p "Enter value of column ${array[index]} : " inputarray[index]
+                echo ${inputarray[index]}
+                let a=$index+3
+
+               value=$(awk -v patt=$a  -F: '{if (NR == patt) print $4}' .metaData_$tableName)
+              
+               
+                if [[ -z ${inputarray[index]}  ]]
+                then
+                 echo "attention this field will be empty field !!!!"
+                 read -p "Do you agree [y or n] ?  : " ans
+                 if [[ $ans  == 'y' || $ans == 'Y' ]]
+                 then
+                    ((index =$index+1))
+                else
+                   tablemenu
+                fi
+
+                elif [[ $value =~ "str" ]]
+                then
+
+                if [[ ${inputarray[index]} =~ ^[a-zA-Z] ]]
+                then
+                ((index =$index+1))
+                else
+                echo you should enter string value
+                return 1
+                fi
+                elif [[ $value =~ "int" ]]
+                then
+                if [[ ${inputarray[index]} =~ [0-9.]+$ ]]
+                then
+                ((index =$index+1))
+                else
+                echo you should enter number
+                return 1
+                fi
+                else
+                echo you should enter valid value
+                fi
+            done
+          fi	        		
+	    if [ $? == 0 ]
+            then
+             {
+             index=1
 		row=${inputarray[0]}
 		while (($index < $size))
 		do
 		row=$row":"${inputarray[index]}
 		((index =$index+1))
 		done
-		echo " "
-		echo $row >> $tableName
-		echo "Row inserted successfully"
-		return 0
+              echo " "
+                echo $row >> $tableName
+                echo "Row inserted successfully"
+                return 0
+
+             }
+              
+            fi
 		fi	
-        
         done
+        else
 	echo " "
 	echo "Table Not exists!!!"
 	echo " "
+fi
 }
+
 
 #############################################droptable#######################################
 function droptable(){
-read -p "Enter table Name: " tablename 
-if [ -z $tablename ] ; then 
-echo -e "please enter the name to delet"
-else 
- rm  ./$tablename 2</dev/null 
-  fi 
-if [ $? == 0 ]; then
-    echo -e "table Dropped Successfully"
-     tablemenu
-  else
-    echo -e "table Not found"
-    tablemenu
-  fi
+read -p "Enter table Name: " tablename
+ if [ -z $tablename ]
+     then
+         echo -e " please enter a correct name"
+         echo Please enter your choice
+
+     elif [[ -f $tablename ]]; then
+         rm  ./$tablename 2</dev/null
+         rm ./.metaData_$tablename 2</dev/null
+         echo -e "Table Dropped Successfully" 
+         tablemenu
+
+     else
+         echo -e "Table $tablename  Not found"
+         echo Please enter your choice  
+ fi
+
 }
 
 ##########################################listtables############################################
@@ -210,8 +380,8 @@ echo -e "you don't have any tables yet "
 else 
 echo -e  "your tables are " 
 ls  ./
-echo Please enter your choice
 fi
+tablemenu
 }
 
 ############################createtable########################################################## 
@@ -246,12 +416,12 @@ function createTable(){
                 if [ $index -eq 1 ]
                 then
                         echo "===================================="
-                        echo "The First Column is the peimary Key"
+                        echo "The First Column is primary Key"
                         echo "===================================="
-                        read -p "Enter column name of $index : " colname
+                        read -p "Enter column $index name : " colname
                         echo "primary key : $index : $colname : int " >> .metaData_$tablename
                 else
-                        read -p "Enter column name of $index : " colname
+                        read -p "Enter column $index name : " colname
                    echo -e "Type of Column $colname: "
                select datatype in "int" "str"
                  do
@@ -280,7 +450,7 @@ function createTable(){
 ########################################################tablemenu##########################################
 function tablemenu(){
 echo "Please enter your choice: "
-options1=("Creat Table" "List Table" "Drop Table" "Insert Into table" "Select from table" "Drop from table" "Updata table" "Back to main menu")
+options1=("Creat Table" "List Table" "Drop Table" "Insert Into table" "Select from table" "Drop row from table" "Updata table" "Back to main menu")
 select opt1 in "${options1[@]}"
 do
     case $opt1 in
@@ -299,7 +469,7 @@ do
         "Select from table") 
             selectfromtable
               ;; 
-        "Drop from table")
+        "Drop row from table")
             dropfromtable
               ;; 
         "Updata table")
