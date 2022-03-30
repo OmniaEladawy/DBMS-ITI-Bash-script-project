@@ -43,11 +43,16 @@ select opt in "${options[@]}"
 function  creatdatabase(){
 cd ~/DBMS/
 read -p "Enter the name of the database please :: " dbname
+
 		if [ -z $dbname ]; then
                         echo ""
 			echo -e $RED "please enter a correct name"
                         echo ""
 			echo -e $blue "Please enter your choice :  "
+
+                #condition for spaces after char
+                elif [[ $dbname = *[[:space:]]* ]]; then
+	                echo -e  $RED "database name can not contain spaces"
 		
 		elif [[ -d $dbname ]]; then
                         echo "" 
@@ -201,7 +206,10 @@ function createTable(){
 			echo -e  $RED  " Please enter a correct name"
                         echo ""
 			echo -e $blue "Please enter your choice : "
-		
+		#condition for spaces after char
+                elif [[ $dbname = *[[:space:]]* ]]; then
+                        echo -e  $RED "database name can not contain spaces"
+
 		elif [ -f "$tablename" ]; then
                         echo ""
 			echo -e $RED  "this table name exists"
